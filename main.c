@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
+
+#if defined(__linux__) && defined(USE_EVENT_FD)
+#include <sys/eventfd.h>
+#endif
 
 int main(int argc, const char * const argv[]) {
     if (argc == 1) {
@@ -9,6 +13,21 @@ int main(int argc, const char * const argv[]) {
         exit(EXIT_FAILURE);
     }
 
+#if defined(__linux__) && defined(USE_EVENT_FD)
+    int fd;
+
+    if ((fd = eventfd(0, 0)) == -1) {
+        perror("create eventfd failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (dup2(fd, STDIN_FILENO) == -1) {
+        perror("replace stdin fileno failed");
+        exit(EXIT_FAILURE);
+    }
+
+    close(fd);
+#else
     int pfd[2];
 
     if (pipe(pfd) == -1) {
@@ -22,6 +41,7 @@ int main(int argc, const char * const argv[]) {
     }
 
     close(pfd[0]);
+#endif
 
     char *new_env[] = { NULL };
     const char *program = argv[1];
