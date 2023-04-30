@@ -5,6 +5,9 @@
 
 #if defined(__linux__) && defined(USE_EVENT_FD)
 #include <sys/eventfd.h>
+#elif defined(USE_UNIX_SOCKET)
+#include <sys/socket.h>
+#include <sys/un.h>
 #endif
 
 int main(int argc, const char * const argv[]) {
@@ -18,6 +21,25 @@ int main(int argc, const char * const argv[]) {
 
     if ((fd = eventfd(0, 0)) == -1) {
         perror("create eventfd failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (dup2(fd, STDIN_FILENO) == -1) {
+        perror("replace stdin fileno failed");
+        exit(EXIT_FAILURE);
+    }
+
+    close(fd);
+#elif defined(USE_UNIX_SOCKET)
+    int fd;
+
+    if ((fd = socket(AF_UNIX, SOCK_DGRAM, 0)) == -1) {
+        perror("create unix socket failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (shutdown(fd, SHUT_WR) == -1) {
+        perror("make socket read-only failed");
         exit(EXIT_FAILURE);
     }
 
