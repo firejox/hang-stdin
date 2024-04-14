@@ -76,5 +76,4 @@ int main(int argc, const char * const argv[]) {
 
     perror("spawn process failure");
     exit(EXIT_FAILURE);
-    return 0;
 }
